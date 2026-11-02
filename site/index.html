@@ -411,6 +411,23 @@
     return Math.max(0, el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2);
   }
 
+  function stride() {
+    return shots.length > 1 ? (shots[1].offsetLeft - shots[0].offsetLeft) : 320;
+  }
+
+  /* On wide viewports, centering an early card clamps to a position we
+     are already at (zero-distance move: the desktop freeze bug). When the
+     centered target makes no progress in the intended direction, advance
+     by one card stride instead. */
+  function targetFor(index, dir) {
+    var max = strip.scrollWidth - strip.clientWidth;
+    var t = Math.min(centerOf(shots[index]), max);
+    var sl = strip.scrollLeft;
+    if (dir > 0 && t <= sl + 2) t = Math.min(max, sl + stride());
+    if (dir < 0 && t >= sl - 2) t = Math.max(0, sl - stride());
+    return t;
+  }
+
   /* Hand-rolled tween: Safari ignores programmatic smooth scrolling on
      snap containers, so we drive scrollLeft ourselves, every frame. */
   function animateTo(target, force) {
@@ -439,7 +456,7 @@
       if (d < bestDist) { bestDist = d; best = i; }
     }
     var next = (best + 1) % shots.length;
-    animateTo(next === 0 ? 0 : centerOf(shots[next]));
+    animateTo(next === 0 ? 0 : targetFor(next, 1));
   }
 
   function pauseRotation() { pausedUntil = Date.now() + 6000; }
@@ -467,8 +484,11 @@
   function updateNav() {
     if (!prevBtn || !nextBtn) return;
     var max = strip.scrollWidth - strip.clientWidth;
+    /* Snap centers the last card about half a gutter shy of absolute max,
+       so "the end" is the last card's own snap point, not max scroll. */
+    var lastTarget = Math.min(centerOf(shots[shots.length - 1]), max);
     var atStart = strip.scrollLeft <= 2;
-    var atEnd = strip.scrollLeft >= max - 2;
+    var atEnd = strip.scrollLeft >= lastTarget - 2;
     prevBtn.disabled = atStart;
     nextBtn.disabled = atEnd;
     prevBtn.classList.toggle('pulse', !atStart);
@@ -487,7 +507,7 @@
   function go(dir) {
     pauseRotation();
     var next = Math.min(shots.length - 1, Math.max(0, nearestIndex() + dir));
-    animateTo(next === 0 ? 0 : centerOf(shots[next]), true);
+    animateTo(next === 0 && dir < 0 ? 0 : targetFor(next, dir), true);
   }
 
   if (prevBtn && nextBtn) {
