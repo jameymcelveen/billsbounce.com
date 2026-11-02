@@ -177,7 +177,7 @@
   .lineup h2 { padding: 0 20px; }
   .strip {
     display: flex; gap: 18px; overflow-x: auto;
-    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
     padding: 14px 24px 26px;
   }
   .shot {
@@ -386,6 +386,25 @@
     return Math.max(0, el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2);
   }
 
+  /* Hand-rolled tween: Safari ignores programmatic smooth scrolling on
+     snap containers, so we drive scrollLeft ourselves, every frame. */
+  function animateTo(target) {
+    var start = strip.scrollLeft;
+    var dist = target - start;
+    if (Math.abs(dist) < 2) return;
+    var dur = 650;
+    var t0 = null;
+    function step(ts) {
+      if (Date.now() < pausedUntil) return; // user grabbed it; stand down
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      var ease = 1 - Math.pow(1 - p, 3);
+      strip.scrollLeft = start + dist * ease;
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
   function tick() {
     if (!visible || document.hidden || Date.now() < pausedUntil) return;
     // find the card nearest the current scroll position, then advance one
@@ -395,7 +414,7 @@
       if (d < bestDist) { bestDist = d; best = i; }
     }
     var next = (best + 1) % shots.length;
-    strip.scrollTo({ left: next === 0 ? 0 : centerOf(shots[next]), behavior: 'smooth' });
+    animateTo(next === 0 ? 0 : centerOf(shots[next]));
   }
 
   ['pointerdown', 'touchstart', 'wheel'].forEach(function (ev) {
