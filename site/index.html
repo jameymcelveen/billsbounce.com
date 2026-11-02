@@ -417,9 +417,15 @@
     animateTo(next === 0 ? 0 : centerOf(shots[next]));
   }
 
-  ['pointerdown', 'touchstart', 'wheel'].forEach(function (ev) {
-    strip.addEventListener(ev, function () { pausedUntil = Date.now() + 10000; }, { passive: true });
-  });
+  function pauseRotation() { pausedUntil = Date.now() + 6000; }
+  strip.addEventListener('pointerdown', pauseRotation, { passive: true });
+  strip.addEventListener('touchstart', pauseRotation, { passive: true });
+  strip.addEventListener('wheel', function (e) {
+    /* Only a SIDEWAYS wheel means the user is driving the carousel.
+       Vertical page-scrolling over the strip must not freeze it: that
+       was the bug that made the rotation look dead on arrival. */
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) pauseRotation();
+  }, { passive: true });
 
   if ('IntersectionObserver' in window) {
     new IntersectionObserver(function (entries) {
