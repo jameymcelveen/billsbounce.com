@@ -177,11 +177,14 @@
   .lineup h2 { padding: 0 20px; }
   .strip {
     display: flex; gap: 18px; overflow-x: auto;
-    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: manipulation;
     padding: 14px 24px 26px;
   }
+  .strip::-webkit-scrollbar { display: none; }
   .shot {
-    flex: 0 0 auto; margin: 0; scroll-snap-align: center;
+    flex: 0 0 auto; margin: 0;
     background: #fff; border-radius: 12px; padding: 8px 8px 10px;
     box-shadow: 0 8px 18px rgba(43,52,64,0.16);
     transform: rotate(-1.3deg);
@@ -202,6 +205,7 @@
     border: none; background: var(--red); color: #fff; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 4px 12px rgba(43, 52, 64, 0.35);
+    touch-action: manipulation;
   }
   .strip-nav.prev { left: 10px; }
   .strip-nav.next { right: 10px; }
@@ -216,6 +220,17 @@
   @media (prefers-reduced-motion: reduce) {
     .strip-nav.pulse { animation: none; }
   }
+  .strip-dots {
+    display: flex; flex-wrap: wrap; gap: 7px;
+    justify-content: center; padding: 2px 20px 14px;
+  }
+  .strip-dots button {
+    width: 8px; height: 8px; border-radius: 999px; border: none;
+    padding: 0; background: #b9c4cf; cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.25s ease, width 0.25s ease;
+  }
+  .strip-dots button.active { background: var(--red); width: 22px; }
 
   .steps { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); counter-reset: step; }
   .step { background: var(--cloud); border-radius: 16px; padding: 20px 16px; text-align: center; }
@@ -327,6 +342,7 @@
       <figure class="shot"><img src="assets/gallery/football-challenge.jpg" alt="Football Challenge inflatable throwing game" loading="lazy"><figcaption>Football Challenge</figcaption></figure>
     </div>
     </div>
+    <div class="strip-dots" aria-label="Gallery position"></div>
     <p class="strip-hint">All photos from real Bill's Bounce setups around the Pee Dee. Swipe to browse.</p>
   </section>
 
@@ -493,6 +509,11 @@
     nextBtn.disabled = atEnd;
     prevBtn.classList.toggle('pulse', !atStart);
     nextBtn.classList.toggle('pulse', !atEnd);
+    if (dots.length) {
+      var current = nearestIndex();
+      for (var j = 0; j < dots.length; j++)
+        dots[j].classList.toggle('active', j === current);
+    }
   }
 
   function nearestIndex() {
@@ -508,6 +529,24 @@
     pauseRotation();
     var next = Math.min(shots.length - 1, Math.max(0, nearestIndex() + dir));
     animateTo(next === 0 && dir < 0 ? 0 : targetFor(next, dir), true);
+  }
+
+  var dotsBox = document.querySelector('.strip-dots');
+  var dots = [];
+  if (dotsBox) {
+    for (var d = 0; d < shots.length; d++) {
+      (function (index) {
+        var dot = document.createElement('button');
+        dot.type = 'button';
+        dot.setAttribute('aria-label', 'Go to photo ' + (index + 1));
+        dot.addEventListener('click', function () {
+          pauseRotation();
+          animateTo(index === 0 ? 0 : centerOf(shots[index]), true);
+        });
+        dotsBox.appendChild(dot);
+        dots.push(dot);
+      })(d);
+    }
   }
 
   if (prevBtn && nextBtn) {
