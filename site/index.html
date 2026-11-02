@@ -106,6 +106,17 @@
       -3px 3px 0 var(--blue), 3px 3px 0 var(--blue),
       0 8px 0 rgba(63,127,179,0.35);
   }
+  .hero h1 { cursor: pointer; user-select: none; }
+  .hero h1 .word { display: inline-block; white-space: nowrap; }
+  .hero h1 .b { display: inline-block; will-change: transform; }
+  @keyframes letterBounce {
+    0%   { transform: translateY(0) scaleY(1); }
+    20%  { transform: translateY(-0.38em) scaleY(1.06); }
+    45%  { transform: translateY(0) scaleY(0.94); }
+    62%  { transform: translateY(-0.14em) scaleY(1.02); }
+    80%  { transform: translateY(0) scaleY(0.98); }
+    100% { transform: translateY(0) scaleY(1); }
+  }
   .hero .tagline {
     font-size: clamp(1.15rem, 4vw, 1.6rem);
     font-weight: 900;
@@ -205,7 +216,7 @@
 
 <main id="top">
   <div class="hero">
-    <h1 class="display">BILL'S BOUNCE</h1>
+    <h1 class="display" id="bounce-title" title="Click me!"><span class="word"><span class="b">B</span><span class="b">I</span><span class="b">L</span><span class="b">L</span><span class="b">'</span><span class="b">S</span></span> <span class="word"><span class="b">B</span><span class="b">O</span><span class="b">U</span><span class="b">N</span><span class="b">C</span><span class="b">E</span></span></h1>
     <p class="tagline">Call Us For All Your Party Needs!</p>
     <p class="sub">Bounce houses, tents, tables, and chairs, delivered around Effingham and the Pee Dee.</p>
     <div class="cta-row">
@@ -284,6 +295,29 @@
   <p><a href="tel:+18439922317">(843) 992-2317</a></p>
   <p><a href="https://www.facebook.com/partyeventneeds/" rel="noopener">Find us on Facebook</a> &#11088; 100% recommended</p>
 </footer>
+
+<script>
+(function () {
+  var title = document.getElementById('bounce-title');
+  if (!title) return;
+  var letters = title.querySelectorAll('.b');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  function bounce() {
+    if (reduceMotion.matches) return;
+    letters.forEach(function (el, i) {
+      el.style.animation = 'none';
+      void el.offsetWidth; /* restart trick: forces a reflow so the animation replays */
+      el.style.animation = 'letterBounce 0.7s cubic-bezier(0.28, 0.84, 0.42, 1) ' + (i * 70) + 'ms both';
+    });
+  }
+  title.addEventListener('click', bounce);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(bounce, 250); });
+  } else {
+    setTimeout(bounce, 250);
+  }
+})();
+</script>
 
 </body>
 </html>
