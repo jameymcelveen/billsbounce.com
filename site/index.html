@@ -370,6 +370,48 @@
     setTimeout(bounce, 250);
   }
 })();
+
+/* Gallery auto-rotate: gentle, pauses on any touch, respects reduced motion. */
+(function () {
+  var strip = document.querySelector('.strip');
+  if (!strip) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var shots = strip.querySelectorAll('.shot');
+  if (shots.length < 2) return;
+
+  var visible = false;
+  var pausedUntil = 0;
+
+  function centerOf(el) {
+    return Math.max(0, el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2);
+  }
+
+  function tick() {
+    if (!visible || document.hidden || Date.now() < pausedUntil) return;
+    // find the card nearest the current scroll position, then advance one
+    var sl = strip.scrollLeft, best = 0, bestDist = Infinity;
+    for (var i = 0; i < shots.length; i++) {
+      var d = Math.abs(centerOf(shots[i]) - sl);
+      if (d < bestDist) { bestDist = d; best = i; }
+    }
+    var next = (best + 1) % shots.length;
+    strip.scrollTo({ left: next === 0 ? 0 : centerOf(shots[next]), behavior: 'smooth' });
+  }
+
+  ['pointerdown', 'touchstart', 'wheel'].forEach(function (ev) {
+    strip.addEventListener(ev, function () { pausedUntil = Date.now() + 10000; }, { passive: true });
+  });
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      visible = entries[0].isIntersecting;
+    }, { threshold: 0.3 }).observe(strip);
+  } else {
+    visible = true;
+  }
+
+  setInterval(tick, 3500);
+})();
 </script>
 
 </body>
